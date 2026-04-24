@@ -1,0 +1,84 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile information.",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string", "format": "email" },
+        "displayName": { "type": "string" },
+        "fullName": { "type": "string" },
+        "group": { "type": "string", "enum": ["Grupo 1", "Grupo 2", "Grupo 3", "Grupo 4", "Grupo 5", "Grupo 6"] },
+        "photoURL": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["email", "fullName", "group", "createdAt"]
+    },
+    "Marker": {
+      "title": "Map Marker",
+      "description": "Markers for preaching locations.",
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string" },
+        "lat": { "type": "number" },
+        "lng": { "type": "number" },
+        "type": { "type": "string", "enum": ["no_casa", "atendio", "revisita"] },
+        "notes": { "type": "string" },
+        "address": { "type": "string" },
+        "lastVisitDate": { "type": "string", "format": "date-time" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["ownerId", "lat", "lng", "type", "createdAt"]
+    },
+    "Contact": {
+      "title": "Contact",
+      "description": "Return visits (revistas) or Bible studies.",
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string" },
+        "name": { "type": "string" },
+        "type": { "type": "string", "enum": ["revisita", "estudio"] },
+        "contactInfo": { "type": "string" },
+        "address": { "type": "string" },
+        "lastSummary": { "type": "string" },
+        "nextTopic": { "type": "string" },
+        "nextVisitDate": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["activo", "inactivo"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["ownerId", "name", "type", "createdAt"]
+    },
+    "VisitHistory": {
+      "title": "Visit History",
+      "description": "History of conversations with a contact or marker.",
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string" },
+        "targetId": { "type": "string" },
+        "date": { "type": "string", "format": "date-time" },
+        "notes": { "type": "string" },
+        "topic": { "type": "string" },
+        "nextAppoint": { "type": "string", "format": "date-time" }
+      },
+      "required": ["ownerId", "targetId", "date"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": "User",
+      "description": "User profile documents."
+    },
+    "markers/{markerId}": {
+      "schema": "Marker",
+      "description": "Preaching markers on the map."
+    },
+    "contacts/{contactId}": {
+      "schema": "Contact",
+      "description": "Return visits or Bible studies details."
+    },
+    "history/{historyId}": {
+      "schema": "VisitHistory",
+      "description": "Visit history log."
+    }
+  }
+}

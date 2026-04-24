@@ -1,0 +1,111 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // 1. Global Helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isOwner(resourceData) {
+      return isSignedIn() && resourceData.ownerId == request.auth.uid;
+    }
+
+    function isSelf(userId) {
+      return isSignedIn() && userId == request.auth.uid;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // 2. Validation Blueprints
+    
+    function isValidUser(data) {
+      return data.keys().hasAll(['email', 'fullName', 'group', 'createdAt'])
+        && data.email is string && data.email.size() <= 256
+        && data.fullName is string && data.fullName.size() <= 256
+        && data.group in ['Grupo 1', 'Grupo 2', 'Grupo 3', 'Grupo 4', 'Grupo 5', 'Grupo 6']
+        && data.createdAt == request.time;
+    }
+
+    function isValidMarker(data) {
+      return data.keys().hasAll(['ownerId', 'lat', 'lng', 'type', 'createdAt'])
+        && data.ownerId == request.auth.uid
+        && data.lat is number && data.lng is number
+        && data.type in ['no_casa', 'revisita', 'estudio']
+        && (data.get('notes', '') is string && data.get('notes', '').size() <= 5000)
+        && (data.get('address', '') is string && data.get('address', '').size() <= 500)
+        && data.createdAt == request.time;
+    }
+
+    function isValidContact(data) {
+      return data.keys().hasAll(['ownerId', 'name', 'type', 'createdAt'])
+        && data.ownerId == request.auth.uid
+        && data.name is string && data.name.size() <= 200
+        && data.type in ['revisita', 'estudio']
+        && (data.get('contactInfo', '') is string && data.get('contactInfo', '').size() <= 1000)
+        && (data.get('address', '') is string && data.get('address', '').size() <= 500)
+        && (data.get('lastSummary', '') is string && data.get('lastSummary', '').size() <= 2000)
+        && (data.get('nextTopic', '') is string && data.get('nextTopic', '').size() <= 1000)
+        && data.createdAt == request.time;
+    }
+
+    function isValidHistory(data) {
+      return data.keys().hasAll(['ownerId', 'targetId', 'date'])
+        && data.ownerId == request.auth.uid
+        && data.targetId is string && data.targetId.size() <= 128
+        && data.date == request.time;
+    }
+
+    // 3. Collection Rules
+
+    match /users/{userId} {
+      allow get: if isSelf(userId);
+      allow create: if isSelf(userId) && isValidUser(incoming());
+      allow update: if isSelf(userId) && incoming().email == existing().email 
+                    && incoming().createdAt == existing().createdAt
+                    && incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'photoURL', 'fullName', 'group']);
+    }
+
+    match /markers/{markerId} {
+      allow get: if isOwner(existing());
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(markerId) && isValidMarker(incoming());
+      allow update: if isOwner(existing()) && isValidMarker(incoming())
+                    && incoming().ownerId == existing().ownerId
+                    && incoming().createdAt == existing().createdAt
+                    && incoming().diff(existing()).affectedKeys().hasOnly(['lat', 'lng', 'type', 'notes', 'address', 'lastVisitDate']);
+      allow delete: if isOwner(existing());
+    }
+
+    match /contacts/{contactId} {
+      allow get: if isOwner(existing());
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(contactId) && isValidContact(incoming());
+      allow update: if isOwner(existing()) && isValidContact(incoming())
+                    && incoming().ownerId == existing().ownerId
+                    && incoming().createdAt == existing().createdAt
+                    && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'type', 'contactInfo', 'address', 'lastSummary', 'nextTopic', 'nextVisitDate', 'status']);
+      allow delete: if isOwner(existing());
+    }
+
+    match /history/{historyId} {
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(historyId) && isValidHistory(incoming());
+      allow delete: if isOwner(existing());
+    }
+  }
+}

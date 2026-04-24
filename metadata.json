@@ -1,0 +1,6 @@
+{
+  "name": "Predicación en Grupo",
+  "description": "Aplicación para gestionar la predicación, revisitas y estudios bíblicos con mapas y soporte offline para Testigos de Jehová.",
+  "requestFramePermissions": ["geolocation", "notifications"],
+  "majorCapabilities": []
+}
