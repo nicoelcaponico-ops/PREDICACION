@@ -1,10 +1,11 @@
 import { ReactNode } from 'react';
 import { NavLink } from 'react-router-dom';
-import { Map, Users, BookOpen, Settings, LogOut, Menu, X } from 'lucide-react';
-import { useState } from 'react';
+import { Map, Users, BookOpen, Settings, LogOut, Menu, X, WifiOff, LayoutDashboard } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '../hooks/useAuth';
-import { logout } from '../lib/firebase';
+import { logout, db } from '../lib/firebase';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
 
 interface LayoutProps {
   children: ReactNode;
@@ -12,30 +13,53 @@ interface LayoutProps {
 
 export default function Layout({ children }: LayoutProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
   const { user, profile } = useAuth();
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   const navItems = [
     { to: '/', icon: <Map className="w-5 h-5" />, label: 'Mapa' },
-    { to: '/contacts', icon: <Users className="w-5 h-5" />, label: 'Contactos' },
+    { to: '/contacts', icon: <Users className="w-5 h-5" />, label: 'Revisitas' },
     { to: '/studies', icon: <BookOpen className="w-5 h-5" />, label: 'Estudios' },
+    { to: '/dashboard', icon: <LayoutDashboard className="w-5 h-5" />, label: 'Dashboard' },
   ];
 
   return (
     <div className="h-full flex flex-col bg-white font-sans relative overflow-hidden">
+      {!isOnline && (
+        <div className="bg-red-500 text-white text-[10px] font-black py-1 px-4 text-center flex items-center justify-center gap-2 uppercase tracking-[0.2em] relative z-[2001]">
+          <WifiOff className="w-3 h-3" /> Modo Offline Activado - Trabajando con Caché
+        </div>
+      )}
       {/* App Header (Always Mobile Style) */}
       <div className="bg-white border-b border-slate-100 p-4 flex items-center justify-between sticky top-0 z-[1000] shadow-sm shrink-0">
-        <h1 className="text-xl font-black text-slate-800 flex items-center gap-2">
-           <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-100">
+        <h1 className="text-xl font-black text-slate-800 flex items-center gap-2 flex-grow min-w-0">
+           <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-100 relative shrink-0">
               <Map className="w-5 h-5 text-white" />
            </div>
-           {profile?.group || 'Predicación'}
+           <span className="truncate">{profile?.group || 'Predicación'}</span>
         </h1>
-        <button 
-          onClick={() => setIsMenuOpen(!isMenuOpen)} 
-          className="p-2 text-slate-600 bg-slate-50 rounded-xl hover:bg-slate-100 transition-all active:scale-95"
-        >
-          {isMenuOpen ? <X /> : <Menu />}
-        </button>
+        <div className="flex items-center gap-3 shrink-0">
+          {/* Subtle Sync Indicator */}
+          <SyncIndicator />
+          <button 
+            onClick={() => setIsMenuOpen(!isMenuOpen)} 
+            className="p-3 text-slate-800 bg-slate-100 rounded-2xl hover:bg-slate-200 transition-all active:scale-95 border border-slate-200 shadow-sm"
+            aria-label="Menú"
+          >
+            {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          </button>
+        </div>
       </div>
 
       {/* Main Content Area */}
@@ -112,5 +136,36 @@ export default function Layout({ children }: LayoutProps) {
         )}
       </AnimatePresence>
     </div>
+  );
+}
+
+function SyncIndicator() {
+  const [isSyncing, setIsSyncing] = useState(false);
+  const { user } = useAuth();
+
+  useEffect(() => {
+    if (!user) return;
+    
+    // Listen to global snapshot metadata to show syncing status for any collection
+    const q = query(collection(db, 'markers'), where('ownerId', '==', user.uid));
+    const unsub = onSnapshot(q, { includeMetadataChanges: true }, (snapshot) => {
+      setIsSyncing(snapshot.metadata.hasPendingWrites);
+    });
+    return unsub;
+  }, [user]);
+
+  if (!isSyncing) return null;
+
+  return (
+    <motion.div 
+      initial={{ scale: 0, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
+      exit={{ scale: 0, opacity: 0 }}
+      className="flex items-center gap-2 bg-blue-50 px-3 py-1.5 rounded-full border border-blue-100"
+      title="Sincronizando cambios..."
+    >
+      <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse" />
+      <span className="text-[10px] font-black text-blue-600 uppercase tracking-tighter">Sync</span>
+    </motion.div>
   );
 }

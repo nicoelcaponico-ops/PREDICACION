@@ -20,6 +20,7 @@ export default function ContactForm({ contact, onClose, type }: ContactFormProps
     address: contact?.address || '',
     lastSummary: contact?.lastSummary || '',
     nextTopic: contact?.nextTopic || '',
+    territory: (contact as any)?.territory || '',
     nextVisitDate: contact?.nextVisitDate ? format(contact.nextVisitDate.toDate(), "yyyy-MM-dd'T'HH:mm") : '',
   });
 
@@ -37,14 +38,39 @@ export default function ContactForm({ contact, onClose, type }: ContactFormProps
       };
 
       if (contact) {
-        await updateDoc(doc(db, 'contacts', contact.id), data);
+        const collectionName = (contact as any).isMarker ? 'markers' : 'contacts';
+        await updateDoc(doc(db, collectionName, contact.id), data);
+        
+        // Add history entry
+        await addDoc(collection(db, 'history'), {
+          ownerId: auth.currentUser.uid,
+          targetId: contact.id,
+          previousType: contact.type,
+          currentType: type,
+          date: serverTimestamp(),
+          notes: formData.lastSummary,
+          topic: formData.nextTopic,
+        });
+        
         toast.success('Actualizado correctamente');
       } else {
-        await addDoc(collection(db, 'contacts'), {
+        const contactRef = await addDoc(collection(db, 'contacts'), {
           ...data,
           status: 'activo',
           createdAt: serverTimestamp(),
         });
+
+        // Add history entry
+        await addDoc(collection(db, 'history'), {
+          ownerId: auth.currentUser.uid,
+          targetId: contactRef.id,
+          previousType: 'none',
+          currentType: type,
+          date: serverTimestamp(),
+          notes: formData.lastSummary,
+          topic: formData.nextTopic,
+        });
+
         toast.success('Registrado correctamente');
       }
       onClose();
@@ -97,6 +123,15 @@ export default function ContactForm({ contact, onClose, type }: ContactFormProps
                  onChange={e => setFormData({...formData, contactInfo: e.target.value})}
                  className="w-full p-4 rounded-2xl bg-slate-50 border-none outline-none font-medium text-slate-800"
                  placeholder="Ej: 11 1234-5678"
+               />
+             </div>
+             <div>
+               <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Territorio #</label>
+               <input 
+                 value={formData.territory}
+                 onChange={e => setFormData({...formData, territory: e.target.value})}
+                 className="w-full p-4 rounded-2xl bg-slate-50 border-none outline-none font-medium text-slate-800"
+                 placeholder="Ej: 5"
                />
              </div>
              <div>

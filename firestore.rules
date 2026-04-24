@@ -46,9 +46,16 @@ service cloud.firestore {
         && data.ownerId == request.auth.uid
         && data.lat is number && data.lng is number
         && data.type in ['no_casa', 'revisita', 'estudio']
+        && (data.get('name', '') is string && data.get('name', '').size() <= 200)
         && (data.get('notes', '') is string && data.get('notes', '').size() <= 5000)
         && (data.get('address', '') is string && data.get('address', '').size() <= 500)
-        && data.createdAt == request.time;
+        && (data.get('territory', '') is string && data.get('territory', '').size() <= 100)
+        && (data.get('contactInfo', '') is string && data.get('contactInfo', '').size() <= 1000)
+        && (data.get('lastSummary', '') is string && data.get('lastSummary', '').size() <= 2000)
+        && (data.get('nextTopic', '') is string && data.get('nextTopic', '').size() <= 1000)
+        && (data.get('nextVisitDate', null) == null || data.nextVisitDate is timestamp)
+        && (data.get('visitCount', 0) is number)
+        && (data.get('updatedAt', null) == null || data.updatedAt is timestamp);
     }
 
     function isValidContact(data) {
@@ -60,13 +67,18 @@ service cloud.firestore {
         && (data.get('address', '') is string && data.get('address', '').size() <= 500)
         && (data.get('lastSummary', '') is string && data.get('lastSummary', '').size() <= 2000)
         && (data.get('nextTopic', '') is string && data.get('nextTopic', '').size() <= 1000)
-        && data.createdAt == request.time;
+        && (data.get('nextVisitDate', null) == null || data.nextVisitDate is timestamp)
+        && (data.get('updatedAt', null) == null || data.updatedAt is timestamp);
     }
 
     function isValidHistory(data) {
-      return data.keys().hasAll(['ownerId', 'targetId', 'date'])
+      return data.keys().hasAll(['ownerId', 'targetId', 'date', 'currentType'])
         && data.ownerId == request.auth.uid
         && data.targetId is string && data.targetId.size() <= 128
+        && data.currentType in ['no_casa', 'revisita', 'estudio']
+        && (data.get('previousType', '') is string)
+        && (data.get('notes', '') is string && data.get('notes', '').size() <= 5000)
+        && (data.get('topic', '') is string)
         && data.date == request.time;
     }
 
@@ -76,29 +88,32 @@ service cloud.firestore {
       allow get: if isSelf(userId);
       allow create: if isSelf(userId) && isValidUser(incoming());
       allow update: if isSelf(userId) && incoming().email == existing().email 
+                    && (incoming().get('updatedAt', null) == null || incoming().updatedAt == request.time)
                     && incoming().createdAt == existing().createdAt
-                    && incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'photoURL', 'fullName', 'group']);
+                    && incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'photoURL', 'fullName', 'group', 'updatedAt']);
     }
 
     match /markers/{markerId} {
       allow get: if isOwner(existing());
       allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
-      allow create: if isSignedIn() && isValidId(markerId) && isValidMarker(incoming());
+      allow create: if isSignedIn() && isValidId(markerId) && isValidMarker(incoming()) && incoming().createdAt == request.time;
       allow update: if isOwner(existing()) && isValidMarker(incoming())
                     && incoming().ownerId == existing().ownerId
                     && incoming().createdAt == existing().createdAt
-                    && incoming().diff(existing()).affectedKeys().hasOnly(['lat', 'lng', 'type', 'notes', 'address', 'lastVisitDate']);
+                    && (incoming().get('updatedAt', null) == null || incoming().updatedAt == request.time)
+                    && incoming().diff(existing()).affectedKeys().hasOnly(['lat', 'lng', 'type', 'name', 'notes', 'address', 'territory', 'contactInfo', 'lastSummary', 'nextTopic', 'nextVisitDate', 'lastVisitDate', 'visitCount', 'updatedAt']);
       allow delete: if isOwner(existing());
     }
 
     match /contacts/{contactId} {
       allow get: if isOwner(existing());
       allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
-      allow create: if isSignedIn() && isValidId(contactId) && isValidContact(incoming());
+      allow create: if isSignedIn() && isValidId(contactId) && isValidContact(incoming()) && incoming().createdAt == request.time;
       allow update: if isOwner(existing()) && isValidContact(incoming())
                     && incoming().ownerId == existing().ownerId
                     && incoming().createdAt == existing().createdAt
-                    && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'type', 'contactInfo', 'address', 'lastSummary', 'nextTopic', 'nextVisitDate', 'status']);
+                    && (incoming().get('updatedAt', null) == null || incoming().updatedAt == request.time)
+                    && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'type', 'contactInfo', 'address', 'lastSummary', 'nextTopic', 'nextVisitDate', 'status', 'updatedAt']);
       allow delete: if isOwner(existing());
     }
 

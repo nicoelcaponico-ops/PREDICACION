@@ -13,16 +13,19 @@ export interface Contact {
   nextTopic?: string;
   nextVisitDate?: any;
   status: 'activo' | 'inactivo';
+  lat?: number;
+  lng?: number;
 }
 
 interface ContactCardProps {
   key?: string | number;
   contact: Contact;
   onEdit: () => void;
+  onGoToMap?: () => void;
   onDelete: () => void | Promise<void>;
 }
 
-export default function ContactCard({ contact, onEdit, onDelete }: ContactCardProps) {
+export default function ContactCard({ contact, onEdit, onGoToMap, onDelete }: ContactCardProps) {
   const isScheduledToday = contact.nextVisitDate && isToday(contact.nextVisitDate.toDate());
   const isStudy = contact.type === 'estudio';
 
@@ -37,13 +40,23 @@ export default function ContactCard({ contact, onEdit, onDelete }: ContactCardPr
           <div className={`w-12 h-12 ${isStudy ? 'bg-green-50 text-green-600' : 'bg-blue-50 text-blue-600'} rounded-full flex items-center justify-center font-black text-xl`}>
             {contact.name[0].toUpperCase()}
           </div>
-          <div>
-            <h3 className="font-bold text-slate-800 text-lg">{contact.name}</h3>
-            {contact.address && (
-              <p className="text-xs text-slate-500 flex items-center gap-1">
-                <MapPin className="w-3 h-3" /> {contact.address}
-              </p>
-            )}
+          <div 
+            className={onGoToMap ? "cursor-pointer" : ""}
+            onClick={onGoToMap}
+          >
+            <h3 className="font-bold text-slate-800 text-lg hover:text-blue-600 transition-colors">{contact.name}</h3>
+            <div className="flex flex-wrap gap-2 items-center mt-1">
+              {(contact as any).territory && (
+                <span className="bg-slate-100 text-slate-500 text-[9px] px-2 py-0.5 rounded-full font-black uppercase tracking-wider">
+                  Territorio {(contact as any).territory}
+                </span>
+              )}
+              {contact.address && (
+                <p className="text-xs text-slate-500 flex items-center gap-1">
+                  <MapPin className="w-3 h-3" /> {contact.address}
+                </p>
+              )}
+            </div>
             {isStudy && (
               <p className="text-[10px] text-green-500 font-bold uppercase tracking-wider flex items-center gap-1 mt-1">
                 <BookOpen className="w-3 h-3" /> Estudiante
@@ -51,7 +64,7 @@ export default function ContactCard({ contact, onEdit, onDelete }: ContactCardPr
             )}
           </div>
         </div>
-        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="flex gap-1 transition-opacity">
           <button onClick={onEdit} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all">
             <Edit2 className="w-4 h-4" />
           </button>
@@ -84,6 +97,16 @@ export default function ContactCard({ contact, onEdit, onDelete }: ContactCardPr
           <Calendar className="w-4 h-4" />
           {format(contact.nextVisitDate.toDate(), "EEEE d 'de' MMMM, HH:mm", { locale: es })}
         </div>
+      )}
+
+      {contact.lat && contact.lng && onGoToMap && (
+        <button 
+          onClick={onGoToMap}
+          className={`flex items-center justify-center gap-2 w-full py-4 rounded-2xl font-black text-sm tracking-widest uppercase transition-all active:scale-95 shadow-lg ${isStudy ? 'bg-green-600 text-white shadow-green-100' : 'bg-blue-600 text-white shadow-blue-100'}`}
+        >
+          <MapPin className="w-4 h-4" />
+          Ver en Mapa
+        </button>
       )}
     </motion.div>
   );

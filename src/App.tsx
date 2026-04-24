@@ -1,15 +1,49 @@
+import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './hooks/useAuth';
 import Layout from './components/Layout';
+import { AnimatePresence, motion } from 'motion/react';
 import PreachingMap from './components/Map';
 import Login from './components/Login';
 import ProfileSetup from './components/ProfileSetup';
 import Contacts from './pages/Contacts';
 import Studies from './pages/Studies';
+import Dashboard from './pages/Dashboard';
 import { Toaster } from 'sonner';
 
 function AppContent() {
   const { user, profile, loading } = useAuth();
+
+  useEffect(() => {
+    // Aggressive Zoom Blocking
+    const preventZoom = (e: any) => {
+      if (e.touches && e.touches.length > 1) {
+        e.preventDefault();
+      }
+    };
+
+    const preventKeyZoom = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && (e.key === '+' || e.key === '-' || e.key === '0')) {
+        e.preventDefault();
+      }
+    };
+
+    const preventWheelZoom = (e: WheelEvent) => {
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+      }
+    };
+
+    document.addEventListener('touchstart', preventZoom, { passive: false });
+    document.addEventListener('keydown', preventKeyZoom);
+    document.addEventListener('wheel', preventWheelZoom, { passive: false });
+
+    return () => {
+      document.removeEventListener('touchstart', preventZoom);
+      document.removeEventListener('keydown', preventKeyZoom);
+      document.removeEventListener('wheel', preventWheelZoom);
+    };
+  }, []);
 
   if (loading) {
     return (
@@ -40,6 +74,7 @@ function AppContent() {
           <Layout>
             <Routes>
               <Route path="/" element={<PreachingMap />} />
+              <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/contacts" element={<Contacts />} />
               <Route path="/studies" element={<Studies />} />
               <Route path="*" element={<Navigate to="/" replace />} />

@@ -26,13 +26,17 @@ export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
 setPersistence(auth, browserLocalPersistence).catch(console.error);
 
 // Enable offline persistence for Firestore
-enableIndexedDbPersistence(db).catch((err) => {
-  if (err.code === 'failed-precondition') {
-    console.warn('Persistence failed: Multiple tabs open');
-  } else if (err.code === 'unimplemented') {
-    console.warn('Persistence failed: Browser not supported');
-  }
-});
+if (typeof window !== 'undefined') {
+  enableIndexedDbPersistence(db).catch((err) => {
+    if (err.code === 'failed-precondition') {
+      // Multiple tabs open, persistence can only be enabled in one tab at a a time.
+      console.warn('Firestore persistence failed: Multiple tabs open');
+    } else if (err.code === 'unimplemented') {
+      // The current browser does not support all of the features required to enable persistence
+      console.warn('Firestore persistence failed: Browser not supported');
+    }
+  });
+}
 
 const googleProvider = new GoogleAuthProvider();
 

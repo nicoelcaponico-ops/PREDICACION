@@ -22,10 +22,13 @@
         "ownerId": { "type": "string" },
         "lat": { "type": "number" },
         "lng": { "type": "number" },
-        "type": { "type": "string", "enum": ["no_casa", "atendio", "revisita"] },
+        "territory": { "type": "string" },
+        "type": { "type": "string", "enum": ["no_casa", "revisita", "estudio"] },
         "notes": { "type": "string" },
         "address": { "type": "string" },
         "lastVisitDate": { "type": "string", "format": "date-time" },
+        "visitCount": { "type": "number" },
+        "updatedAt": { "type": "string", "format": "date-time" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["ownerId", "lat", "lng", "type", "createdAt"]
@@ -50,17 +53,19 @@
     },
     "VisitHistory": {
       "title": "Visit History",
-      "description": "History of conversations with a contact or marker.",
+      "description": "History of visits and status changes for markers",
       "type": "object",
       "properties": {
         "ownerId": { "type": "string" },
         "targetId": { "type": "string" },
+        "previousType": { "type": "string" },
+        "currentType": { "type": "string" },
         "date": { "type": "string", "format": "date-time" },
         "notes": { "type": "string" },
         "topic": { "type": "string" },
         "nextAppoint": { "type": "string", "format": "date-time" }
       },
-      "required": ["ownerId", "targetId", "date"]
+      "required": ["ownerId", "targetId", "date", "currentType"]
     }
   },
   "firestore": {
