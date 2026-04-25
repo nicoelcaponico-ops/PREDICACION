@@ -1,7 +1,18 @@
 import { signInWithGoogle } from '../lib/firebase';
 import { motion } from 'motion/react';
+import { toast } from 'sonner';
 
 export default function Login() {
+  const handleLogin = async () => {
+    try {
+      await signInWithGoogle();
+    } catch (error: any) {
+      if (error.code !== 'auth/popup-closed-by-user') {
+        toast.error('Error al iniciar sesión: ' + (error.message || 'Error desconocido'));
+      }
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 font-sans">
       <motion.div 
@@ -23,7 +34,7 @@ export default function Login() {
 
         <div className="space-y-4">
           <button
-            onClick={signInWithGoogle}
+            onClick={handleLogin}
             className="w-full flex items-center justify-center gap-4 bg-white border-2 border-slate-100 p-4 rounded-2xl font-bold text-slate-700 hover:bg-slate-50 hover:border-slate-200 transition-all active:scale-[0.98] shadow-sm"
           >
             <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="w-6 h-6" alt="Google" />

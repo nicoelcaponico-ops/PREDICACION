@@ -44,6 +44,10 @@ export const signInWithGoogle = async () => {
   try {
     return await signInWithPopup(auth, googleProvider);
   } catch (error: any) {
+    if (error.code === 'auth/popup-closed-by-user') {
+      console.log('El inicio de sesión fue cancelado por el usuario (ventana cerrada).');
+      return null;
+    }
     if (error.code === 'auth/network-request-failed') {
       console.error('Error de red al intentar iniciar sesión. Por favor, verificá tu conexión a internet.');
     }
