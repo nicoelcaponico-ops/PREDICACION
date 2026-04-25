@@ -4,7 +4,9 @@ import App from './App.tsx';
 import './index.css';
 import { registerSW } from 'virtual:pwa-register';
 
-registerSW({ immediate: true });
+if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+  registerSW();
+}
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

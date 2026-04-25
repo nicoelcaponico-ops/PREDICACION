@@ -11,47 +11,18 @@ export default defineConfig(({mode}) => {
       react(), 
       tailwindcss(),
       VitePWA({
-        registerType: 'autoUpdate',
-        includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
+        registerType: 'prompt',
         manifest: {
+          id: 'com.predicapp.map',
+          start_url: '/',
+          scope: '/',
           name: 'Predicación Map',
           short_name: 'PredicApp',
           description: 'Gestión de territorio y revisitas para la predicación',
           theme_color: '#2563eb',
           background_color: '#f8fafc',
           display: 'standalone',
-          orientation: 'portrait',
-          icons: [
-            {
-              src: 'pwa-192x192.png',
-              sizes: '192x192',
-              type: 'image/png'
-            },
-            {
-              src: 'pwa-512x512.png',
-              sizes: '512x512',
-              type: 'image/png',
-              purpose: 'any maskable'
-            }
-          ]
-        },
-        workbox: {
-          runtimeCaching: [
-            {
-              urlPattern: /^https:\/\/[a-c]\.tile\.openstreetmap\.org\/.*/i,
-              handler: 'CacheFirst',
-              options: {
-                cacheName: 'map-tiles',
-                expiration: {
-                  maxEntries: 2000,
-                  maxAgeSeconds: 60 * 60 * 24 * 30 // 30 Days
-                },
-                cacheableResponse: {
-                  statuses: [0, 200]
-                }
-              }
-            }
-          ]
+          orientation: 'portrait'
         }
       })
     ],
